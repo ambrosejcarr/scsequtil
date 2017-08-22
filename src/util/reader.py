@@ -1,6 +1,7 @@
 import os
 import gzip
 import bz2
+from collections.abc import Iterable
 
 
 class Reader:
@@ -18,10 +19,14 @@ class Reader:
           return bytes objects.
         """
 
-        if isinstance(files_, list):
-            self._files = files_
-        elif isinstance(files_, str):
+        if isinstance(files_, str):
             self._files = [files_]
+        elif isinstance(files_, Iterable):  # test items of iterable
+            files_ = list(files_)
+            if all(isinstance(f, str) for f in files_):
+                self._files = files_
+            else:
+                raise TypeError('all passed files must be type str')
         else:
             raise TypeError('files_ must be a string filename or a list of such names.')
 
