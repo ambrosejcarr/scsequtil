@@ -2,6 +2,9 @@ import numpy as np
 from . import reader
 
 
+# todo decide if I would prefer to add a translator to the Record class that would allow string literals to be
+# converted into bytes objects, improving code maintainability at a small speed cost.
+
 class Record:
     """Fastq record object
 
@@ -33,15 +36,21 @@ class Record:
 
     @name.setter
     def name(self, value):
-        self._data[0] = value
+        if not isinstance(value, (bytes, str)):
+            raise TypeError('name must be str or bytes')
+        else:
+            self._data[0] = value
 
     @property
     def sequence(self):
         return self._data[1]
 
     @sequence.setter
-    def sequence(self, value: bytes):
-        self._data[1] = value
+    def sequence(self, value):
+        if not isinstance(value, (bytes, str)):
+            raise TypeError('sequence must be str or bytes')
+        else:
+            self._data[1] = value
 
     @property
     def name2(self):
@@ -49,7 +58,10 @@ class Record:
 
     @name2.setter
     def name2(self, value):
-        self._data[2] = value
+        if not isinstance(value, (bytes, str)):
+            raise TypeError('name2 must be str or bytes')
+        else:
+            self._data[2] = value
 
     @property
     def quality(self):
@@ -57,7 +69,10 @@ class Record:
 
     @quality.setter
     def quality(self, value):
-        self._data[3] = value
+        if not isinstance(value, (bytes, str)):
+            raise TypeError('quality must be str or bytes')
+        else:
+            self._data[3] = value
 
     def __bytes__(self):
         try:
@@ -90,7 +105,7 @@ class Record:
     def set_tag(self, key, value):
         raise NotImplementedError
 
-    def set_tags(self, keys, values):
+    def set_tags(self, kv_pairs):
         raise NotImplementedError
 
 
@@ -109,18 +124,18 @@ class BytesRecord(Record):
     :property average_quality: return the mean quality of FastqRecord
     """
 
-    _type_map = {int: b'i',
-                 str: b'Z',
-                 float: b'f'}
-    _itype_map = {v: k for k, v in _type_map.items()}
+    _bytes_itype_map = {
+        b'i': int,
+        b'Z': bytes,
+        b'f': float}
 
     def get_tags(self):
         """
         :return list: annotations present in the fastq header
         """
         return {
-            k: self._itype_map[t](v) for k, t, v in
-            (v.split(b':') for v in self.name[1:].split(b';')[-1])}
+            k.decode(): self._bytes_itype_map[t](v) for k, t, v in
+            (v.split(b':') for v in self.name[1:].split(b';')[:-1])}
 
     def get_tag(self, key):
         try:
@@ -128,35 +143,48 @@ class BytesRecord(Record):
         except KeyError:
             return None
 
-    @classmethod
-    def _mktag(cls, key, value):
+    @staticmethod
+    def _mktag(key, value):
         """
         construct a tag given a key, value pair
-        :param key:
-        :param value:
-        :return str:
+        :param str key:
+        :param str | int | float | bytes value:
+        :return bytes:
         """
-        return '%s:%s:%s' % (
-            key,
-            cls._type_map[type(value)],
-            str(value))
+        if type(value) is str:
+            tag_type = b'Z'
+            value = bytes(str(value), 'utf-8')
+        elif type(value) is bytes:
+            tag_type = b'Z'
+        elif type(value) is float:
+            tag_type = b'f'
+            value = bytes(str(value), 'utf-8')
+        elif type(value) is int:
+            tag_type = b'i'
+            value = bytes(str(value), 'utf-8')
+        else:
+            raise TypeError('tag type must be int, float, str, or bytes')
+
+        return b'%b:%b:%b' % (
+            key.encode(),
+            tag_type,
+            value)
 
     def set_tag(self, key, value):
         """prepends a tag to annotation name
-        :param bytes key:
-        :param Object value:
+        :param str key:
+        :param str | int | float | bytes value:
         """
-        self.name = '@%s;%s' % (self._mktag(key, value), self.name[1:])
+        self.name = b'@%s;%s' % (self._mktag(key, value), self.name[1:])
 
-    def set_tags(self, keys, values):
+    def set_tags(self, kv_pairs):
         """
 
-        :param keys:
-        :param values:
+        :param tuple((str, str | int | float | bytes),) kv_pairs: iterable of (key, value) tuples
         :return:
         """
-        '@%s;%s' % (
-            ';'.join(self._mktag(k, v) for k, v in zip(keys, values)),
+        self.name = b'@%s;%s' % (
+            b';'.join(self._mktag(k, v) for k, v in kv_pairs),
             self.name[1:]
         )
 
@@ -183,18 +211,18 @@ class StrRecord(Record):
     :property average_quality: return the mean quality of FastqRecord
     """
 
-    _type_map = {int: 'i',
-                 str: 'Z',
-                 float: 'f'}
-    _itype_map = {v: k for k, v in _type_map.items()}
+    _str_itype_map = {
+        'i': int,
+        'Z': str,
+        'f': float}
 
     def get_tags(self):
         """
         :return list: annotations present in the fastq header
         """
         return {
-            k: self._itype_map[t](v) for k, t, v in
-            (v.split(':') for v in self.name[1:].split(';')[-1])}
+            k: self._str_itype_map[t](v) for k, t, v in
+            (v.split(':') for v in self.name[1:].split(';')[:-1])}
 
     def get_tag(self, key):
         try:
@@ -202,35 +230,49 @@ class StrRecord(Record):
         except KeyError:
             return None
 
-    @classmethod
-    def _mktag(cls, key, value):
+    # todo should support bytes keys
+    @staticmethod
+    def _mktag(key, value):
         """
         construct a tag given a key, value pair
-        :param key:
-        :param value:
+        :param str key:
+        :param str | int | bytes | float value:
         :return str:
         """
+        if type(value) is str:
+            tag_type = 'Z'
+        elif type(value) is float:
+            tag_type = 'f'
+            value = str(value)
+        elif type(value) is int:
+            tag_type = 'i'
+            value = str(value)
+        elif type(value) is bytes:
+            tag_type = 'Z'
+            value = value.encode()
+        else:
+            raise TypeError('tag type must be int, float, or str')
+
         return '%s:%s:%s' % (
             key,
-            cls._type_map[type(value)],
-            str(value))
+            tag_type,
+            value)
 
     def set_tag(self, key, value):
         """prepends a tag to annotation name
-        :param bytes key:
-        :param Object value:
+        :param str key:
+        :param str | int | bytes | float value:
         """
         self.name = '@%s;%s' % (self._mktag(key, value), self.name[1:])
 
-    def set_tags(self, keys, values):
+    def set_tags(self, kv_pairs):
         """
 
-        :param keys:
-        :param values:
+        :param kv_pairs: Iterable of (key, value) tuples
         :return:
         """
-        '@%s;%s' % (
-            ';'.join(self._mktag(k, v) for k, v in zip(keys, values)),
+        self.name = '@%s;%s' % (
+            ';'.join(self._mktag(k, v) for k, v in kv_pairs),
             self.name[1:]
         )
 
@@ -282,4 +324,11 @@ class Reader(reader.Reader):
             i += 1
         return np.mean(data), np.std(data), np.unique(data, return_counts=True)
 
+    def _verify(self):
+        """
+        function should verify that a record is valid as it is being read. (should be optional, and able to be turned
+        off for speed in production code.
 
+        :return:
+        """
+        raise NotImplementedError
