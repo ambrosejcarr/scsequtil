@@ -1,7 +1,6 @@
 import os
 import gzip
 import bz2
-from functools import partial
 
 
 class Reader:
@@ -27,7 +26,7 @@ class Reader:
             raise TypeError('files_ must be a string filename or a list of such names.')
 
         # set open mode:
-        if not mode in {'r', 'rb'}:
+        if mode not in {'r', 'rb'}:
             raise ValueError('mode must be one of r, rb')
         self._mode = mode
 

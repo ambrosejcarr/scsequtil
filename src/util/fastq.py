@@ -261,13 +261,6 @@ class Reader(reader.Reader):
         for record in self.record_grouper(super().__iter__()):
             yield record_type(record)
 
-    def __len__(self):
-        """
-        return the length of the FastqReader object. Note that for sys.stdin, this will
-        consume the input
-        """
-        return super().__len__() / 4
-
     def estimate_sequence_length(self):
         """
         estimate the sequence length of a fastq file from the first 10000 records of
