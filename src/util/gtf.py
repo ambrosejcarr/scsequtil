@@ -11,9 +11,9 @@ class Record:
 
     __slots__ = ['_fields', '_attribute']
 
-    _del_letters = string.ascii_letters  #.encode()
+    _del_letters = string.ascii_letters
     _del_non_letters = ''.join(
-        set(string.printable).difference(string.ascii_letters))  #.encode()
+        set(string.printable).difference(string.ascii_letters))
 
     def __init__(self, record):
         """
@@ -131,7 +131,7 @@ class Reader(reader.Reader):
 
     def __iter__(self):
         for line in super().__iter__():
-            return Record(line)
+            yield Record(line)
 
     def filter(self, retain_types):
         """
