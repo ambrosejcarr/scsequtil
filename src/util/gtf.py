@@ -21,7 +21,7 @@ class Record:
         :param str record: input record from file
         """
         fields = record.strip(';\n').split('\t')
-        self._fields = fields[:7]
+        self._fields = fields[:8]
         self._attribute = {
             key: value.strip('"') for (key, value) in
             [field.split() for field in fields[8].split('; ')]
@@ -81,11 +81,11 @@ class Record:
 
     @property
     def size(self):
-        return self.end - self.start
-
-    @property
-    def fields(self):
-        return self._fields
+        size = self.end - self.start
+        if size < 0:
+            raise ValueError('invalid record: negative size %d (start > end)' % size)
+        else:
+            return size
 
     def get_attribute(self, key):
         """
@@ -99,6 +99,11 @@ class Record:
             return None
 
     def set_attribute(self, key, value):
+        """
+
+        :param str key: attribute name
+        :param str value: attribute value
+        """
         self._attribute[key] = value
 
     def __eq__(self, other):
