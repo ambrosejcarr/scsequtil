@@ -11,7 +11,9 @@ setup(
         'numpy',
         'pysam',
         'matplotlib>=2.0.0',
-        'nose2'
+        'nose2',
+        'jinja2',
+        'weasyprint'
     ],
     include_package_data=True
 )
