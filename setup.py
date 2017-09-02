@@ -1,12 +1,12 @@
 from setuptools import setup
 
 setup(
-    name='util',
+    name='scsequtil',
     description='Utilities for large scale single cell data processing',
     author='Ambrose J. Carr',
     author_email='mail@ambrosejcarr.com',
     package_dir={'': 'src'},
-    packages=['util', 'util/plot', 'util/test'],
+    packages=['scsequtil', 'scsequtil/plot', 'scsequtil/test'],
     install_requires=[
         'numpy',
         'pysam',

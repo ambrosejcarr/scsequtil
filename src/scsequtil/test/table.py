@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import unittest
-import util.table
+import scsequtil.table
 
 
 class TestTable(unittest.TestCase):
@@ -13,7 +13,7 @@ class TestTable(unittest.TestCase):
         """
         data = np.zeros(4).reshape(2, 2)
         df = pd.DataFrame(data, index=['green', 'eggs'], columns=['foo', 'bar'])
-        util.table.print_pdf(df, 'a table', 'table.pdf')
+        scsequtil.table.print_pdf(df, 'a table', 'table.pdf')
 
 
 if __name__ == "__main__":

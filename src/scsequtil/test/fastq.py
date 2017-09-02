@@ -2,8 +2,8 @@ from itertools import product
 from functools import partial
 from nose2.tools import params
 import unittest
-from util import fastq
-from util import reader
+from scsequtil import fastq
+from scsequtil import reader
 import string
 import os
 import copy

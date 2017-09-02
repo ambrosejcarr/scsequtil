@@ -1,7 +1,7 @@
 from nose2.tools import params
 import os
 import unittest
-from util import gtf
+from scsequtil import gtf
 from itertools import chain
 
 _data_dir = os.path.split(__file__)[0] + '/data'
