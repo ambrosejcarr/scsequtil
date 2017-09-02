@@ -1,3 +1,5 @@
 include src/util/test/data/*
 include src/util/css/*
 include src/util/html_/*
+include LICENSE
+include *.rst
