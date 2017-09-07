@@ -2,11 +2,8 @@ import numpy as np
 from . import reader
 
 
-# todo decide if I would prefer to add a translator to the Record class that would allow string literals to be
-# converted into bytes objects, improving code maintainability at a small speed cost.
-
 class Record:
-    """Fastq record object
+    """Abstract Fastq record object
 
     Defines several properties for accessing fastq record information:
     :property name: name field
@@ -113,15 +110,15 @@ class BytesRecord(Record):
     """Fastq record object
 
     Defines several properties for accessing fastq record information:
-    :property name: name field
-    :property sequence: sequence field
-    :property name2: second name field
-    :property quality: quality field
+    :property bytes name: name field
+    :property bytes sequence: sequence field
+    :property bytes name2: second name field
+    :property bytes quality: quality field
 
     Also defines several methods for accessing SEQC annotation fields:
-    :property annotations: list of annotations
-    :property metadata: dictionary of read metadata (if any present)
-    :property average_quality: return the mean quality of FastqRecord
+    :property list annotations: list of annotations
+    :property dict metadata: dictionary of read metadata (if any present)
+    :property float average_quality: return the mean quality of FastqRecord
     """
 
     _bytes_itype_map = {
@@ -145,7 +142,8 @@ class BytesRecord(Record):
 
     @staticmethod
     def _mktag(key, value):
-        """
+        """internal method to create a bam-compatible tag from a key and value.
+
         construct a tag given a key, value pair
         :param str key:
         :param str | int | float | bytes value:
@@ -178,10 +176,9 @@ class BytesRecord(Record):
         self.name = b'@%s;%s' % (self._mktag(key, value), self.name[1:])
 
     def set_tags(self, kv_pairs):
-        """
+        """prepend multiple tags to annotation name
 
         :param tuple((str, str | int | float | bytes),) kv_pairs: iterable of (key, value) tuples
-        :return:
         """
         self.name = b'@%s;%s' % (
             b';'.join(self._mktag(k, v) for k, v in kv_pairs),
@@ -200,15 +197,15 @@ class StrRecord(Record):
     """Fastq record object
 
     Defines several properties for accessing fastq record information:
-    :property name: name field
-    :property sequence: sequence field
-    :property name2: second name field
-    :property quality: quality field
+    :property str name: name field
+    :property str sequence: sequence field
+    :property str name2: second name field
+    :property str quality: quality field
 
     Also defines several methods for accessing SEQC annotation fields:
-    :property annotations: list of annotations
-    :property metadata: dictionary of read metadata (if any present)
-    :property average_quality: return the mean quality of FastqRecord
+    :property list annotations: list of annotations
+    :property dict metadata: dictionary of read metadata (if any present)
+    :property float average_quality: return the mean quality of FastqRecord
     """
 
     _str_itype_map = {
@@ -218,7 +215,10 @@ class StrRecord(Record):
 
     def get_tags(self):
         """
-        :return list: annotations present in the fastq header
+        return all sequence tags.
+
+        :return [(str, object)]: annotations present in the fastq header, type of value will depend
+          upon the tag's type specific. Options: Int, string, float.
         """
         return {
             k: self._str_itype_map[t](v) for k, t, v in
@@ -235,6 +235,7 @@ class StrRecord(Record):
     def _mktag(key, value):
         """
         construct a tag given a key, value pair
+
         :param str key:
         :param str | int | bytes | float value:
         :return str:
@@ -260,13 +261,14 @@ class StrRecord(Record):
 
     def set_tag(self, key, value):
         """prepends a tag to annotation name
-        :param str key:
-        :param str | int | bytes | float value:
+
+        :param str key: name of tag
+        :param str | int | bytes | float value: value of tag
         """
         self.name = '@%s;%s' % (self._mktag(key, value), self.name[1:])
 
     def set_tags(self, kv_pairs):
-        """
+        """prepend multiple tags to annotation name
 
         :param kv_pairs: Iterable of (key, value) tuples
         :return:
@@ -277,7 +279,10 @@ class StrRecord(Record):
         )
 
     def average_quality(self):
-        """"""
+        """calculate the average quality of the fastq read
+
+        :return float: average quality of fastq read
+        """
         return (
             np.mean(np.fromstring(self.quality, dtype=np.int8, count=len(self)))
             .astype(int) - 33
@@ -331,4 +336,8 @@ class Reader(reader.Reader):
 
         :return:
         """
+        raise NotImplementedError
+
+    def estimate_length(self):
+        """should estimate length of all provided files."""
         raise NotImplementedError

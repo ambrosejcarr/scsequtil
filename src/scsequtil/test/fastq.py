@@ -248,6 +248,41 @@ class TestRecord(unittest.TestCase):
         self.assertEqual(record1.get_tags(), dict(all_tags))
 
 
+class TestIterMultiple(unittest.TestCase):
+
+    @params(*_files_and_modes)
+    def test_iter_multiple(self, filename, mode):
+        rd1 = fastq.Reader(
+            '%s/%s' % (data_dir, filename),
+            mode=mode)
+        rd2 = fastq.Reader(
+            '%s/%s' % (data_dir, filename),
+            mode=mode)
+
+        iterator = reader.zip_readers(rd1, rd2)
+        record1, record2 = next(iterator)
+
+        self.assertEqual(record1.sequence, record2.sequence)
+        self.assertEqual(record1.name, record2.name)
+        self.assertEqual(len(next(iterator)), 2)
+
+        for (record1, record2) in iterator:
+            self.assertEqual(record1.name, record2.name)
+            break
+
+    @params(*_files_and_modes)
+    def test_iter_multiple_with_index_selection(self, filename, mode):
+        rd1 = fastq.Reader(
+            '%s/%s' % (data_dir, filename),
+            mode=mode)
+        rd2 = fastq.Reader(
+            '%s/%s' % (data_dir, filename),
+            mode=mode)
+
+        iterator = reader.zip_readers(rd1, rd2, indices=set(range(10)))
+        results = list(iterator)
+        self.assertEqual(len(results), 10)
+
 
 if __name__ == "__main__":
     unittest.main()

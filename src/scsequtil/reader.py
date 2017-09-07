@@ -1,7 +1,8 @@
 import os
 import gzip
 import bz2
-from collections.abc import Iterable
+from copy import copy
+from collections.abc import Iterable, Iterator
 
 
 class Reader:
@@ -90,4 +91,36 @@ class Reader:
 
     def estimate_length(self):
         """should estimate length of all provided files."""
-        return NotImplemented
+        raise NotImplementedError
+
+    def select_indices(self, indices):
+        """iterate over provided indices only, skipping other records.
+
+        :param set indices:
+        :return Iterator:
+        """
+        indices = copy(indices)  # passed indices is a reference, need own copy to modify
+        for idx, record in enumerate(self):
+            if idx in indices:
+                yield record
+                indices.remove(idx)
+
+                # stopping condition
+                if not indices:
+                    break
+
+
+def zip_readers(*readers, indices=None):
+    """zip together multiple fastq objects, yielding records simultaneously.
+
+    :param [Reader] readers:
+    :param set indices: set of indices to iterate over
+    :return Iterator: iterator over tuples of records, one from each passed Reader object.
+    """
+    # iterators = [iter(r) for r in readers]
+    if indices:
+        iterators = zip(*[r.select_indices(indices) for r in readers])
+    else:
+        iterators = zip(*readers)
+    for record_tuple in iterators:
+        yield record_tuple
