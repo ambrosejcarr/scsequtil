@@ -16,8 +16,9 @@ CLASSIFIERS = [
 
 setup(
     name='scsequtil',
-    version='0.0.3',
+    version='0.0.4',
     description='Utilities for large scale single cell data processing',
+    url='https://github.com/ambrosejcarr/scsequtil.git',
     author='Ambrose J. Carr',
     author_email='mail@ambrosejcarr.com',
     package_dir={'': 'src'},
