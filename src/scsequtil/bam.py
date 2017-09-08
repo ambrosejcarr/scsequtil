@@ -50,13 +50,14 @@ class SubsetAlignments:
 
             for i, record in enumerate(fin):
 
-                # should be a check that works with all annotation types
-                if not record.is_unmapped and (
-                            chromosome in record.reference_name) and (
-                            specific < n_specific):
-                    chromosome_indices.append(i)
-                    specific += 1
-                elif chromosome not in record.reference_name and nonspecific < include_other:
+                if not record.is_unmapped:  # record is mapped
+                    if chromosome in record.reference_name and specific < n_specific:
+                        chromosome_indices.append(i)
+                        specific += 1
+                    elif nonspecific < include_other:
+                        other_indices.append(i)
+                        nonspecific += 1
+                elif nonspecific < include_other:  # record is not mapped
                     other_indices.append(i)
                     nonspecific += 1
 

@@ -250,6 +250,7 @@ class TestRecord(unittest.TestCase):
 
 class TestIterMultiple(unittest.TestCase):
 
+    # todo note this is not adequately testing unmapped reads
     @params(*_files_and_modes)
     def test_iter_multiple(self, filename, mode):
         rd1 = fastq.Reader(
