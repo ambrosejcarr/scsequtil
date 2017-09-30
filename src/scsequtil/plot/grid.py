@@ -1,10 +1,10 @@
+import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 
 
 class AxesGrid:
 
-    def __init__(self, n, nrows, ncols, figure_size):
+    def __init__(self, n, nrows=None, ncols=None, *args, **kwargs):
         """
         Generate a grid of figures to plot on.
 
@@ -12,16 +12,19 @@ class AxesGrid:
           are turned off.
         :param int nrows: number of rows of axes
         :param int ncols: number of columns of axes
+        :param list args: additional positional arguments to pass to plt.subplots
+        :param dict kwargs: additional keyword arguments to pass to plt.subplots
         """
         self._n = n
+        if not all([nrows, ncols]):
+            nrows = ncols = np.ceil(np.sqrt(n))
         self._nrows = nrows
         self._ncols = ncols
-        self._size = figure_size
         self._figure = None
         self._axes = None
 
         self._figure, self._axes = plt.subplots(
-            nrows=self._nrows, ncols=self._ncols, figsize=self._size)
+            nrows=self._nrows, ncols=self._ncols, *args, **kwargs)
 
     def __iter__(self):
         for ax in self._axes:
