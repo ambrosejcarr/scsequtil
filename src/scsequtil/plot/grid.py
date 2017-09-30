@@ -38,4 +38,4 @@ class AxesGrid:
           keyword argument (ax=ax)
         """
         for ax, args in zip(self, arguments):
-            plot_function(*arguments, ax=ax)
+            plot_function(*args, ax=ax)
