@@ -17,7 +17,7 @@ class AxesGrid:
         """
         self._n = n
         if not all([nrows, ncols]):
-            nrows = ncols = np.ceil(np.sqrt(n))
+            nrows = ncols = np.ceil(np.sqrt(n)).astype(int)
         self._nrows = nrows
         self._ncols = ncols
         self._figure = None
@@ -26,8 +26,16 @@ class AxesGrid:
         self._figure, self._axes = plt.subplots(
             nrows=self._nrows, ncols=self._ncols, *args, **kwargs)
 
+    @property
+    def figure(self):
+        return self._figure
+
+    @property
+    def axes(self):
+        return self._axes
+
     def __iter__(self):
-        for ax in self._axes:
+        for ax in np.ravel(self._axes):
             yield ax
 
     def __getitem__(self, item):
