@@ -1,8 +1,7 @@
 import unittest
 from nose2.tools import params
 import os
-from scsequtil.bam import SubsetAlignments, TagBam
-from scsequtil.fastq import Tag, TagGenerator
+from scsequtil.bam import SubsetAlignments, attach_10x_barcodes
 import pysam
 
 # test files have 4446 chr 19 and 873 chr 21 alignments
@@ -76,12 +75,10 @@ class TestTagBam(unittest.TestCase):
         cls.r2 = data_dir + '/test_r2.bam'
 
     def test_tag(self):
-        cell_barcode = Tag(start=0, end=16, quality_tag='CY', sequence_tag='CR')
-        molecule_barcode = Tag(start=16, end=24, quality_tag='UY', sequence_tag='UR')
-        sample_barcode = Tag(start=0, end=8, quality_tag='SY', sequence_tag='SR')
-
-        r1tg = TagGenerator([cell_barcode, molecule_barcode], files_=self.r1)
-        i7tg = TagGenerator([sample_barcode], files_=self.i7)
-
-        tb = TagBam(self.r2)
-        tb.tag(data_dir + '/test_r2_tagged.bam', [r1tg, i7tg])
+        args = {
+            'r1': self.r1,
+            'i7': self.i7,
+            'u2': self.r2,
+            'output_bamfile': data_dir + '/test_r2_tagged.bam'
+        }
+        attach_10x_barcodes(args)

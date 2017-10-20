@@ -32,6 +32,10 @@ setup(
         'jinja2',
         'weasyprint'
     ],
+    entry_points={
+            'console_scripts': [
+                'Attach10xBarcodes = scsequtil.bam:attach_10x_barcodes',
+    ]},
     classifiers=CLASSIFIERS,
     include_package_data=True
 )

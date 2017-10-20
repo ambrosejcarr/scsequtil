@@ -1,5 +1,6 @@
 import pysam
-from itertools import chain
+from .fastq import TagGenerator, Tag
+import argparse
 
 
 class SubsetAlignments:
@@ -101,3 +102,31 @@ class TagBam:
             outbam.close()
 
 
+def attach_10x_barcodes(args=None):
+    """ add cell and molecular barcode tags to an unaligned read 2 10x genomics bam"""
+    if args is None:
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            '--r1', required=True,
+            help='read 1 fastq record for a 10x genomics experiment')
+        parser.add_argument(
+            '--i7', required=True, help='i7 fastq record for a 10x genomics experiment')
+        parser.add_argument(
+            '--u2', required=True,
+            help='unaligned read-2 bam containing genomic information. Can be converted'
+                 'using picard FastqToSam')
+        parser.add_argument('-o', '--output-bamfile', required=True,
+                            help='filename for tagged bam')
+        args = vars(parser.parse_args())
+
+    cell_barcode = Tag(start=0, end=16, quality_tag='CY', sequence_tag='CR')
+    molecule_barcode = Tag(start=16, end=24, quality_tag='UY', sequence_tag='UR')
+    sample_barcode = Tag(start=0, end=8, quality_tag='SY', sequence_tag='SR')
+
+    r1tg = TagGenerator([cell_barcode, molecule_barcode], files_=args['r1'])
+    i7tg = TagGenerator([sample_barcode], files_=args['i7'])
+
+    tb = TagBam(args['u2'])
+    tb.tag(args['output_bamfile'], [r1tg, i7tg])
+
+    return 0
