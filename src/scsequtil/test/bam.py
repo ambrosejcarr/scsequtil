@@ -1,7 +1,8 @@
 import unittest
 from nose2.tools import params
 import os
-from scsequtil.bam import SubsetAlignments
+from scsequtil.bam import SubsetAlignments, TagBam
+from scsequtil.fastq import Tag, TagGenerator
 import pysam
 
 # test files have 4446 chr 19 and 873 chr 21 alignments
@@ -64,3 +65,23 @@ class TestSubsetAlignments(unittest.TestCase):
 
         # first chromosome 21 index should come after all chromosome 19 indices
         self.assertEqual(min(ind_specific), 4446)
+
+
+class TestTagBam(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.i7 = data_dir + '/test_i7.fastq'
+        cls.r1 = data_dir + '/test_r1.fastq'
+        cls.r2 = data_dir + '/test_r2.bam'
+
+    def test_tag(self):
+        cell_barcode = Tag(start=0, end=16, quality_tag='CY', sequence_tag='CR')
+        molecule_barcode = Tag(start=16, end=24, quality_tag='UY', sequence_tag='UR')
+        sample_barcode = Tag(start=0, end=8, quality_tag='SY', sequence_tag='SR')
+
+        r1tg = TagGenerator([cell_barcode, molecule_barcode], files_=self.r1)
+        i7tg = TagGenerator([sample_barcode], files_=self.i7)
+
+        tb = TagBam(self.r2)
+        tb.tag(data_dir + '/test_r2_tagged.bam', [r1tg, i7tg])

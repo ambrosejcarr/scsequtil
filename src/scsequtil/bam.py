@@ -1,5 +1,6 @@
 import pysam
-from . import fastq
+from itertools import chain
+
 
 class SubsetAlignments:
 
@@ -80,11 +81,23 @@ class TagBam:
     def __init__(self, bam_file):
         self.bam_file = bam_file
 
-    def tag(self, *fastqs_with_tags):
-        fastq_iterators = [fastq.Reader(fqf) for ]
-        with pysam.AlignmentFile(self.bam_file, 'rb') as sam_iterator:
+    def tag(self, output_bam_name, tag_generators):
+        """
 
-            for fqr, sr in zip(fastq_iterator, sam_iterator):
-                seq = fqr.sequence[range_start:range_stop]
-                qual = fqr.sequence[range_start:range_stop]
+        :param str output_bam_name: name of output tagged bam.
+        :param [fastq.TagGenerator] tag_generators:
+        """
+        inbam = pysam.AlignmentFile(self.bam_file, 'rb', check_sq=False)
+        outbam = pysam.AlignmentFile(output_bam_name, 'wb', header=inbam.header)
+        try:
+            # zip up all the iterators
+            for *tag_sets, sam_record in zip(*tag_generators, inbam):
+                for tag_set in tag_sets:
+                    for tag in tag_set:
+                        sam_record.set_tag(*tag)
+                outbam.write(sam_record)
+        finally:
+            inbam.close()
+            outbam.close()
+
 

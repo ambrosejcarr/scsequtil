@@ -337,19 +337,26 @@ Tag = namedtuple('Tag', ['start', 'end', 'sequence_tag', 'quality_tag'])
 class TagGenerator(Reader):
 
     def __init__(self, tags, *args, **kwargs):
+        """parse fastq files for tag(s) defined by tag objects
+
+        :param [Tag] tags: list of tag objects defining start and end of the sequence
+          containing the tag, plus the string quality and sequence tags
+        :param list|str files_: file or list of files to be read. Defaults to sys.stdin
+        :param mode: open mode. Default 'r' will return string objects. Change to 'rb' to
+          return bytes objects.
+        """
         super().__init__(*args, **kwargs)
         self.tags = tags
 
     def __iter__(self):
-        record_type = StrRecord if self._mode == 'r' else BytesRecord
-        for record in self.record_grouper(super().__iter__()):
-            tags = []  # todo fixme
+        for record in super().__iter__():  # iterates fq records; we extract tags.
+            tags = []
             for tag in self.tags:
-                tags.extend(self.extract_tag(record_type(record), tag))
+                tags.extend(self.extract_tag(record, tag))
             yield tags
 
     @staticmethod
     def extract_tag(record, tag):
-        seq = record.sequence[tag.start:tag.stop]
-        qual =  record.quality[tag.start:tag.stop]
+        seq = record.sequence[tag.start:tag.end]
+        qual = record.quality[tag.start:tag.end]
         return (tag.sequence_tag, seq, 'Z'), (tag.quality_tag, qual, 'Z')
