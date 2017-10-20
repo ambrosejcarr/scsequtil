@@ -1,4 +1,5 @@
 import numpy as np
+from collections import namedtuple
 from . import reader
 
 
@@ -329,15 +330,26 @@ class Reader(reader.Reader):
             i += 1
         return np.mean(data), np.std(data), np.unique(data, return_counts=True)
 
-    def _verify(self):
-        """
-        function should verify that a record is valid as it is being read. (should be optional, and able to be turned
-        off for speed in production code.
 
-        :return:
-        """
-        raise NotImplementedError
+Tag = namedtuple('Tag', ['start', 'end', 'sequence_tag', 'quality_tag'])
 
-    def estimate_length(self):
-        """should estimate length of all provided files."""
-        raise NotImplementedError
+
+class TagGenerator(Reader):
+
+    def __init__(self, tags, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tags = tags
+
+    def __iter__(self):
+        record_type = StrRecord if self._mode == 'r' else BytesRecord
+        for record in self.record_grouper(super().__iter__()):
+            tags = []  # todo fixme
+            for tag in self.tags:
+                tags.extend(self.extract_tag(record_type(record), tag))
+            yield tags
+
+    @staticmethod
+    def extract_tag(record, tag):
+        seq = record.sequence[tag.start:tag.stop]
+        qual =  record.quality[tag.start:tag.stop]
+        return (tag.sequence_tag, seq, 'Z'), (tag.quality_tag, qual, 'Z')

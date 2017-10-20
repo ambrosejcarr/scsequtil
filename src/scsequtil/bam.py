@@ -1,5 +1,5 @@
 import pysam
-
+from . import fastq
 
 class SubsetAlignments:
 
@@ -73,3 +73,18 @@ class SubsetAlignments:
             return chromosome_indices, other_indices
         else:
             return chromosome_indices
+
+
+class TagBam:
+
+    def __init__(self, bam_file):
+        self.bam_file = bam_file
+
+    def tag(self, *fastqs_with_tags):
+        fastq_iterators = [fastq.Reader(fqf) for ]
+        with pysam.AlignmentFile(self.bam_file, 'rb') as sam_iterator:
+
+            for fqr, sr in zip(fastq_iterator, sam_iterator):
+                seq = fqr.sequence[range_start:range_stop]
+                qual = fqr.sequence[range_start:range_stop]
+
