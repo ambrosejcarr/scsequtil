@@ -1,4 +1,6 @@
 import pysam
+from .fastq import TagGenerator, Tag
+import argparse
 
 
 class SubsetAlignments:
@@ -73,3 +75,58 @@ class SubsetAlignments:
             return chromosome_indices, other_indices
         else:
             return chromosome_indices
+
+
+class TagBam:
+
+    def __init__(self, bam_file):
+        self.bam_file = bam_file
+
+    def tag(self, output_bam_name, tag_generators):
+        """
+
+        :param str output_bam_name: name of output tagged bam.
+        :param [fastq.TagGenerator] tag_generators:
+        """
+        inbam = pysam.AlignmentFile(self.bam_file, 'rb', check_sq=False)
+        outbam = pysam.AlignmentFile(output_bam_name, 'wb', header=inbam.header)
+        try:
+            # zip up all the iterators
+            for *tag_sets, sam_record in zip(*tag_generators, inbam):
+                for tag_set in tag_sets:
+                    for tag in tag_set:
+                        sam_record.set_tag(*tag)
+                outbam.write(sam_record)
+        finally:
+            inbam.close()
+            outbam.close()
+
+
+def attach_10x_barcodes(args=None):
+    """ add cell and molecular barcode tags to an unaligned read 2 10x genomics bam"""
+    if args is None:
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            '--r1', required=True,
+            help='read 1 fastq record for a 10x genomics experiment')
+        parser.add_argument(
+            '--i7', required=True, help='i7 fastq record for a 10x genomics experiment')
+        parser.add_argument(
+            '--u2', required=True,
+            help='unaligned read-2 bam containing genomic information. Can be converted'
+                 'using picard FastqToSam')
+        parser.add_argument('-o', '--output-bamfile', required=True,
+                            help='filename for tagged bam')
+        args = vars(parser.parse_args())
+
+    cell_barcode = Tag(start=0, end=16, quality_tag='CY', sequence_tag='CR')
+    molecule_barcode = Tag(start=16, end=24, quality_tag='UY', sequence_tag='UR')
+    sample_barcode = Tag(start=0, end=8, quality_tag='SY', sequence_tag='SR')
+
+    r1tg = TagGenerator([cell_barcode, molecule_barcode], files_=args['r1'])
+    i7tg = TagGenerator([sample_barcode], files_=args['i7'])
+
+    tb = TagBam(args['u2'])
+    tb.tag(args['output_bamfile'], [r1tg, i7tg])
+
+    return 0

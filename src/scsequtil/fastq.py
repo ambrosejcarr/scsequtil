@@ -1,4 +1,5 @@
 import numpy as np
+from collections import namedtuple
 from . import reader
 
 
@@ -329,15 +330,33 @@ class Reader(reader.Reader):
             i += 1
         return np.mean(data), np.std(data), np.unique(data, return_counts=True)
 
-    def _verify(self):
-        """
-        function should verify that a record is valid as it is being read. (should be optional, and able to be turned
-        off for speed in production code.
 
-        :return:
-        """
-        raise NotImplementedError
+Tag = namedtuple('Tag', ['start', 'end', 'sequence_tag', 'quality_tag'])
 
-    def estimate_length(self):
-        """should estimate length of all provided files."""
-        raise NotImplementedError
+
+class TagGenerator(Reader):
+
+    def __init__(self, tags, *args, **kwargs):
+        """parse fastq files for tag(s) defined by tag objects
+
+        :param [Tag] tags: list of tag objects defining start and end of the sequence
+          containing the tag, plus the string quality and sequence tags
+        :param list|str files_: file or list of files to be read. Defaults to sys.stdin
+        :param mode: open mode. Default 'r' will return string objects. Change to 'rb' to
+          return bytes objects.
+        """
+        super().__init__(*args, **kwargs)
+        self.tags = tags
+
+    def __iter__(self):
+        for record in super().__iter__():  # iterates fq records; we extract tags.
+            tags = []
+            for tag in self.tags:
+                tags.extend(self.extract_tag(record, tag))
+            yield tags
+
+    @staticmethod
+    def extract_tag(record, tag):
+        seq = record.sequence[tag.start:tag.end]
+        qual = record.quality[tag.start:tag.end]
+        return (tag.sequence_tag, seq, 'Z'), (tag.quality_tag, qual, 'Z')

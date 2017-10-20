@@ -89,10 +89,6 @@ class Reader:
         """return the collective size of all files being read in bytes"""
         return sum(os.stat(f).st_size for f in self._files)
 
-    def estimate_length(self):
-        """should estimate length of all provided files."""
-        raise NotImplementedError
-
     def select_indices(self, indices):
         """iterate over provided indices only, skipping other records.
 
